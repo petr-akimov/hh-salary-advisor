@@ -1,0 +1,289 @@
+# ==========================================
+# 1. STORAGE FOR SQLITE DATABASE
+# ==========================================
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: sqlite-pvc
+  namespace: default
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+
+# ==========================================
+# 2. BACKEND (FASTAPI + SQLITE + ML MODEL)
+# ==========================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hh-backend
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: hh-backend
+  template:
+    metadata:
+      labels:
+        app: hh-backend
+    spec:
+      containers:
+      - name: backend
+        image: petrakimovdocker/hh:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8000
+        env:
+        - name: DATABASE_URL
+          value: "sqlite:////data/app.db"
+        volumeMounts:
+        - name: sqlite-storage
+          mountPath: /data
+        resources:
+          limits:
+            cpu: "500m"
+            memory: "512Mi"
+          requests:
+            cpu: "100m"
+            memory: "256Mi"
+      volumes:
+      - name: sqlite-storage
+        persistentVolumeClaim:
+          claimName: sqlite-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: hh-backend-service
+  namespace: default
+spec:
+  type: ClusterIP
+  selector:
+    app: hh-backend
+  ports:
+  - port: 8000
+    targetPort: 8000
+    protocol: TCP
+---
+
+# ==========================================
+# 3. NGINX CONFIGMAP (FRONTEND & PROXY)
+# ==========================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nginx-frontend-config
+  namespace: default
+data:
+  nginx.conf: |
+    events {
+        worker_connections 1024;
+    }
+    http {
+        include       /etc/nginx/mime.types;
+        default_type  application/octet-stream;
+
+        server {
+            listen 80;
+            server_name www.pa99.online;
+
+            root /usr/share/nginx/html;
+            index index.html;
+
+            # Статика фронтенда
+            location / {
+                try_files $uri $uri/ /index.html;
+            }
+
+            # Проксирование API запросов к FastAPI бэкенду
+            location /api/ {
+                proxy_pass http://hh-backend-service:8000/;
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                proxy_set_header X-Forwarded-Proto $scheme;
+            }
+        }
+    }
+
+  index.html: |
+    <!DOCTYPE html>
+    <html lang="ru">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>HH Salary Advisor</title>
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+        <style>
+            body { background-color: #f8f9fa; padding-top: 2rem; }
+            .card { border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+            .result-box { display: none; margin-top: 1.5rem; }
+        </style>
+    </head>
+    <body>
+        <div class="container" style="max-width: 700px;">
+            <div class="card p-4">
+                <h3 class="mb-3 text-primary text-center">Оценка стоимости резюме (HH Salary Advisor)</h3>
+                <p class="text-muted text-center mb-4">Заполните данные кандидата без указания ЗП — модель рассчитает рекомендуемый оклад и диапазон рынка.</p>
+
+                <form id="salaryForm">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Возраст</label>
+                            <input type="number" class="form-control" id="age" value="30" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Пол</label>
+                            <select class="form-select" id="gender">
+                                <option value="М">Мужской</option>
+                                <option value="Ж">Женский</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Опыт работы (в месяцах)</label>
+                            <input type="number" class="form-control" id="experience" value="48" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Город</label>
+                            <select class="form-select" id="city">
+                                <option value="Москва">Москва</option>
+                                <option value="Санкт-Петербург">Санкт-Петербург</option>
+                                <option value="город-миллионник">Город-миллионник</option>
+                                <option value="другие">Другой город</option>
+                            </select>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Уровень образования</label>
+                            <select class="form-select" id="education">
+                                <option value="высшее">Высшее</option>
+                                <option value="неоконченное высшее">Неоконченное высшее</option>
+                                <option value="среднее специальное">Среднее специальное</option>
+                                <option value="среднее">Среднее</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100 mt-4">Рассчитать рекомендуемую ЗП</button>
+                </form>
+
+                <div id="resultBox" class="result-box alert alert-success">
+                    <h4 class="alert-heading text-center mb-3">Результат оценки:</h4>
+                    <div class="d-flex justify-content-between border-bottom pb-2 mb-2">
+                        <span>Рекомендуемая ЗП:</span>
+                        <strong id="predSalary">0 ₽</strong>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span>Оцениваемый диапазон рынка:</span>
+                        <strong id="salaryRange">0 ₽ - 0 ₽</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            document.getElementById('salaryForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const payload = {
+                    age: parseInt(document.getElementById('age').value),
+                    gender: document.getElementById('gender').value,
+                    experience_months: parseInt(document.getElementById('experience').value),
+                    city: document.getElementById('city').value,
+                    education: document.getElementById('education').value
+                };
+
+                try {
+                    const res = await fetch('/api/predict', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    const data = await res.json();
+                    
+                    document.getElementById('predSalary').innerText = `${data.recommended_salary.toLocaleString()} ₽`;
+                    document.getElementById('salaryRange').innerText = `${data.min_salary.toLocaleString()} ₽ — ${data.max_salary.toLocaleString()} ₽`;
+                    document.getElementById('resultBox').style.display = 'block';
+                } catch (err) {
+                    alert('Ошибка при вызове модели: ' + err.message);
+                }
+            });
+        </script>
+    </body>
+    </html>
+---
+
+# ==========================================
+# 4. FRONTEND NGINX DEPLOYMENT & SERVICE
+# ==========================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hh-frontend
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: hh-frontend
+  template:
+    metadata:
+      labels:
+        app: hh-frontend
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:alpine
+        ports:
+        - containerPort: 80
+        volumeMounts:
+        - name: nginx-config
+          mountPath: /etc/nginx/nginx.conf
+          subPath: nginx.conf
+        - name: nginx-config
+          mountPath: /usr/share/nginx/html/index.html
+          subPath: index.html
+      volumes:
+      - name: nginx-config
+        configMap:
+          name: nginx-frontend-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: hh-frontend-service
+  namespace: default
+spec:
+  type: ClusterIP
+  selector:
+    app: hh-frontend
+  ports:
+  - port: 80
+    targetPort: 80
+    protocol: TCP
+---
+
+# ==========================================
+# 5. INGRESS ROUTING
+# ==========================================
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: hh-salary-ingress
+  namespace: default
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+spec:
+  rules:
+  - host: www.pa99.online
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: hh-frontend-service
+            port:
+              number: 80
