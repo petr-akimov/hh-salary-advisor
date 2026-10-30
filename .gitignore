@@ -1,0 +1,15 @@
+.venv
+venv
+tmp
+*~
+.*~
+*.tmp
+*.old
+*.csv
+.terraform
+tf/.terraform
+.terraform.lock.hcl
+.terraform.tfstate.lock.info
+tf/terraform.tfstate
+tf/terraform.tfstate.backup
+tf/terraform.tfvars
