@@ -1,21 +1,5 @@
 # ==========================================
-# 1. STORAGE FOR SQLITE DATABASE
-# ==========================================
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: sqlite-pvc
-  namespace: default
-spec:
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: 1Gi
----
-
-# ==========================================
-# 2. BACKEND (FASTAPI + SQLITE + ML MODEL)
+# 1. BACKEND (FASTAPI + ML MODEL)
 # ==========================================
 apiVersion: apps/v1
 kind: Deployment
@@ -38,12 +22,6 @@ spec:
         imagePullPolicy: Always
         ports:
         - containerPort: 8000
-        env:
-        - name: DATABASE_URL
-          value: "sqlite:////data/app.db"
-        volumeMounts:
-        - name: sqlite-storage
-          mountPath: /data
         resources:
           limits:
             cpu: "500m"
@@ -51,10 +29,6 @@ spec:
           requests:
             cpu: "100m"
             memory: "256Mi"
-      volumes:
-      - name: sqlite-storage
-        persistentVolumeClaim:
-          claimName: sqlite-pvc
 ---
 apiVersion: v1
 kind: Service
@@ -72,7 +46,7 @@ spec:
 ---
 
 # ==========================================
-# 3. NGINX CONFIGMAP (FRONTEND & PROXY)
+# 2. NGINX CONFIGMAP (FRONTEND & PROXY)
 # ==========================================
 apiVersion: v1
 kind: ConfigMap
@@ -95,12 +69,10 @@ data:
             root /usr/share/nginx/html;
             index index.html;
 
-            # Статика фронтенда
             location / {
                 try_files $uri $uri/ /index.html;
             }
 
-            # Проксирование API запросов к FastAPI бэкенду
             location /api/ {
                 proxy_pass http://hh-backend-service:8000/;
                 proxy_set_header Host $host;
@@ -113,7 +85,7 @@ data:
 
   index.html: |
     <!DOCTYPE html>
-    <html lang="ru">
+    <html lang="en">
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -128,56 +100,60 @@ data:
     <body>
         <div class="container" style="max-width: 700px;">
             <div class="card p-4">
-                <h3 class="mb-3 text-primary text-center">Оценка стоимости резюме (HH Salary Advisor)</h3>
-                <p class="text-muted text-center mb-4">Заполните данные кандидата без указания ЗП — модель рассчитает рекомендуемый оклад и диапазон рынка.</p>
+                <h3 class="mb-3 text-primary text-center">HH Salary Advisor</h3>
+                <p class="text-muted text-center mb-4">Fill in candidate details to calculate recommended salary range.</p>
 
                 <form id="salaryForm">
                     <div class="row g-3">
                         <div class="col-md-6">
-                            <label class="form-label">Возраст</label>
+                            <label class="form-label">Age</label>
                             <input type="number" class="form-control" id="age" value="30" required>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">Пол</label>
+                            <label class="form-label">Gender</label>
                             <select class="form-select" id="gender">
-                                <option value="М">Мужской</option>
-                                <option value="Ж">Женский</option>
-                            </select>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Опыт работы (в месяцах)</label>
-                            <input type="number" class="form-control" id="experience" value="48" required>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Город</label>
-                            <select class="form-select" id="city">
-                                <option value="Москва">Москва</option>
-                                <option value="Санкт-Петербург">Санкт-Петербург</option>
-                                <option value="город-миллионник">Город-миллионник</option>
-                                <option value="другие">Другой город</option>
+                                <option value="М">Male</option>
+                                <option value="Ж">Female</option>
                             </select>
                         </div>
                         <div class="col-12">
-                            <label class="form-label">Уровень образования</label>
+                            <label class="form-label">Desired Position / Job Title</label>
+                            <input type="text" class="form-control" id="desired_job" value="MLOps Engineer" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Experience (in months)</label>
+                            <input type="number" class="form-control" id="experience" value="48" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">City</label>
+                            <select class="form-select" id="city">
+                                <option value="Москва">Moscow</option>
+                                <option value="Санкт-Петербург">Saint Petersburg</option>
+                                <option value="город-миллионник">Million-plus city</option>
+                                <option value="другие">Other city</option>
+                            </select>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Education Level</label>
                             <select class="form-select" id="education">
-                                <option value="высшее">Высшее</option>
-                                <option value="неоконченное высшее">Неоконченное высшее</option>
-                                <option value="среднее специальное">Среднее специальное</option>
-                                <option value="среднее">Среднее</option>
+                                <option value="высшее">Higher</option>
+                                <option value="неоконченное высшее">Incomplete higher</option>
+                                <option value="среднее специальное">Secondary special</option>
+                                <option value="среднее">Secondary</option>
                             </select>
                         </div>
                     </div>
-                    <button type="submit" class="btn btn-primary w-100 mt-4">Рассчитать рекомендуемую ЗП</button>
+                    <button type="submit" class="btn btn-primary w-100 mt-4">Calculate Recommended Salary</button>
                 </form>
 
                 <div id="resultBox" class="result-box alert alert-success">
-                    <h4 class="alert-heading text-center mb-3">Результат оценки:</h4>
+                    <h4 class="alert-heading text-center mb-3">Estimation Result:</h4>
                     <div class="d-flex justify-content-between border-bottom pb-2 mb-2">
-                        <span>Рекомендуемая ЗП:</span>
+                        <span>Recommended Salary:</span>
                         <strong id="predSalary">0 ₽</strong>
                     </div>
                     <div class="d-flex justify-content-between">
-                        <span>Оцениваемый диапазон рынка:</span>
+                        <span>Estimated Market Range:</span>
                         <strong id="salaryRange">0 ₽ - 0 ₽</strong>
                     </div>
                 </div>
@@ -190,6 +166,7 @@ data:
                 const payload = {
                     age: parseInt(document.getElementById('age').value),
                     gender: document.getElementById('gender').value,
+                    desired_job: document.getElementById('desired_job').value,
                     experience_months: parseInt(document.getElementById('experience').value),
                     city: document.getElementById('city').value,
                     education: document.getElementById('education').value
@@ -207,7 +184,7 @@ data:
                     document.getElementById('salaryRange').innerText = `${data.min_salary.toLocaleString()} ₽ — ${data.max_salary.toLocaleString()} ₽`;
                     document.getElementById('resultBox').style.display = 'block';
                 } catch (err) {
-                    alert('Ошибка при вызове модели: ' + err.message);
+                    alert('Error calling model API: ' + err.message);
                 }
             });
         </script>
@@ -216,7 +193,7 @@ data:
 ---
 
 # ==========================================
-# 4. FRONTEND NGINX DEPLOYMENT & SERVICE
+# 3. FRONTEND NGINX DEPLOYMENT & SERVICE
 # ==========================================
 apiVersion: apps/v1
 kind: Deployment
@@ -266,7 +243,7 @@ spec:
 ---
 
 # ==========================================
-# 5. INGRESS ROUTING
+# 4. INGRESS ROUTING
 # ==========================================
 apiVersion: networking.k8s.io/v1
 kind: Ingress

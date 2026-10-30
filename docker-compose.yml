@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  backend:
+    image: petrakimovdocker/hh:latest
+    container_name: hh-backend
+    restart: always
+    ports:
+      - "8000:8000"
+
+  frontend:
+    image: nginx:alpine
+    container_name: hh-frontend
+    restart: always
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./index.html:/usr/share/nginx/html/index.html:ro
+    depends_on:
+      - backend
