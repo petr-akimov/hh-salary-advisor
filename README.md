@@ -122,9 +122,24 @@ To provision a Managed Kubernetes cluster in **Cloud.ru Evolution** using Terraf
    terraform apply
    ```
 
+---
 
+## Kubernetes cluster and application status
+
+<img src="png/cli001.png?raw=true" alt="Kubernetes status" title="Kubernetes cluster and application status" width="100%"> <br>
 
 ---
+
+## User Interface & Estimated Salaries
+
+<img src="png/screen001.png?raw=true" alt="Estimated Salaries - 1" title="Estimated Salaries - 1" width="100%"> <br>
+
+<img src="png/screen002.png?raw=true" alt="Estimated Salaries - 2" title="Estimated Salaries - 2" width="100%"> <br>
+
+<img src="png/screen003.png?raw=true" alt="Estimated Salaries - 3" title="Estimated Salaries - 3" width="100%"> <br>
+
+---
+
 
 ## Evaluation Criteria Compliance Matrix
 
