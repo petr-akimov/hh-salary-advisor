@@ -13,3 +13,8 @@ tf/.terraform
 tf/terraform.tfstate
 tf/terraform.tfstate.backup
 tf/terraform.tfvars
+positions.txt
+model.bin
+translate_jobs.py
+get_unique_jobs.py
+uv.lock

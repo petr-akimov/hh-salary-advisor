@@ -9,7 +9,7 @@ WORKDIR /app
 # Создаем виртуальное окружение и устанавливаем необходимые библиотеки напрямую
 RUN uv venv /app/.venv && \
     . /app/.venv/bin/activate && \
-    uv pip install --no-cache fastapi uvicorn pandas numpy scikit-learn xgboost-cpu jinja2
+    uv pip install --no-cache fastapi uvicorn pandas numpy scikit-learn lightgbm jinja2
 
 # Финальный легковесный образ
 FROM python:3.12-slim
