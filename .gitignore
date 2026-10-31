@@ -18,3 +18,4 @@ model.bin
 translate_jobs.py
 get_unique_jobs.py
 uv.lock
+.ipynb_checkpoints
