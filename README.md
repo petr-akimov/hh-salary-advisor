@@ -203,4 +203,4 @@ To provision a Managed Kubernetes cluster in **Cloud.ru Evolution** using Terraf
 | **Model Deployment** | **2 / 2** | [app/main.py](app/main.py): Functional FastAPI web service exposing prediction endpoints. |
 | **Dependency Management** | **2 / 2** | `pyproject.toml` & `uv.lock` with locked/pinned versions and virtual environment setup. |
 | **Containerization** | **2 / 2** | [Dockerfile](Dockerfile): Production-ready multi-stage container bundling backend, frontend, system OpenMP libraries, and trained model artifacts. |
-| **Cloud Deployment** | **2 / 2** | `tf/` & `k8s/`: Terraform configuration and manifests for deploying infrastructure into Cloud.ru Managed Kubernetes. |
+| **Cloud Deployment** | **2 / 2** | [tf/](tf/) & [k8s/](k8s/): Terraform configuration and manifests for deploying infrastructure into Cloud.ru Managed Kubernetes. |
