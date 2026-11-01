@@ -199,8 +199,8 @@ To provision a Managed Kubernetes cluster in **Cloud.ru Evolution** using Terraf
 | **EDA & Data Prep** | **2 / 2** | [notebooks/](notebooks/): Comprehensive analysis of missing values, multi-currency conversion to RUB, outlier removal via quantiles, and feature engineering. |
 | **Model Training & Tuning** | **3 / 3** | [train_lgbm.py](train_lgbm.py) & [notebooks/](notebooks/): Benchmarking and training fast gradient boosting models (**LightGBM**) with hyperparameter optimization. |
 | **Script Conversion** | **1 / 1** | [train_lgbm.py](train_lgbm.py): Clean extraction of training logic into a reproducible python script. |
-| **Reproducibility** | **2 / 2** | `pyproject.toml` / `uv.lock` & structured directories with clear step-by-step execution instructions. |
+| **Reproducibility** | **2 / 2** | [pyproject.toml](pyproject.toml) and structured directories with clear step-by-step execution instructions. |
 | **Model Deployment** | **2 / 2** | [app/main.py](app/main.py): Functional FastAPI web service exposing prediction endpoints. |
-| **Dependency Management** | **2 / 2** | `pyproject.toml` & `uv.lock` with locked/pinned versions and virtual environment setup. |
+| **Dependency Management** | **2 / 2** | [pyproject.toml](pyproject.toml): with locked/pinned versions and virtual environment setup. |
 | **Containerization** | **2 / 2** | [Dockerfile](Dockerfile): Production-ready multi-stage container bundling backend, frontend, system OpenMP libraries, and trained model artifacts. |
 | **Cloud Deployment** | **2 / 2** | [tf/](tf/) & [k8s/](k8s/): Terraform configuration and manifests for deploying infrastructure into Cloud.ru Managed Kubernetes. |
