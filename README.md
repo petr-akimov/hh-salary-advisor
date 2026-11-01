@@ -60,10 +60,9 @@ flowchart TD
 ├── tf/                      # Terraform infrastructure code for Cloud.ru
 ├── png/                     # Documentation and UI screenshots
 ├── Dockerfile               # Single-container build recipe for Backend + UI + Model
-├── pyproject.toml / uv.lock # Dependency management configuration (uv)
-├── index.html               # Frontend HTML UI interface
+├── pyproject.toml           # Dependency management configuration (uv)
 ├── model.bin                # Pre-trained LightGBM model artifact
-├── train.py                 # Script for training and saving the model
+├── train.py                 # Script for training and saving the model for XGBoost
 └── train_lgbm.py            # Specialized training script for LightGBM
 ```
 
