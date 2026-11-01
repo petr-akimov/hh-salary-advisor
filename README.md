@@ -161,7 +161,7 @@ Expected Response:
 
 To provision a Managed Kubernetes cluster in **Cloud.ru Evolution** using Terraform:
 
-1. Navigate to the `tf/` directory:
+1. Navigate to the `tf/` directory and rollout the infrastructure:
    ```bash
    cd tf
    terraform init
@@ -169,7 +169,10 @@ To provision a Managed Kubernetes cluster in **Cloud.ru Evolution** using Terraf
    terraform plan
    terraform apply
    ```
-
+2. Run application
+   ```
+   kubectl apply -f k8s
+   ```
 ---
 
 ## Kubernetes cluster and application status
